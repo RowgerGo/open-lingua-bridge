@@ -1,0 +1,21 @@
+[package]
+name = "open-lingua-bridge-desktop"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+name = "open_lingua_bridge_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[dependencies]
+olb-core = { path = "../../../crates/olb-core" }
+olb-protocol = { path = "../../../crates/olb-protocol" }
+serde.workspace = true
+serde_json.workspace = true
+tauri = { version = "2.0", features = [] }
+tauri-plugin-opener = "2.0"
+
+[build-dependencies]
+tauri-build = { version = "2.0", features = [] }

@@ -1,0 +1,14 @@
+{
+  "venvPath": "python-service",
+  "venv": ".venv",
+  "executionEnvironments": [
+    {
+      "root": "python-service/src",
+      "extraPaths": ["python-service/src"]
+    },
+    {
+      "root": "python-service/tests",
+      "extraPaths": ["python-service/src"]
+    }
+  ]
+}

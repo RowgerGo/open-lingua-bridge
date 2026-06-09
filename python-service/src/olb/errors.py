@@ -1,0 +1,38 @@
+"""Centralized error code registry used by both HTTP and WebSocket layers."""
+
+from __future__ import annotations
+
+from enum import Enum
+
+
+class ErrorCode(str, Enum):
+    OK = "OK"
+    INVALID_REQUEST = "INVALID_REQUEST"
+    UNAUTHORIZED = "UNAUTHORIZED"
+    PROTOCOL_VERSION_MISMATCH = "PROTOCOL_VERSION_MISMATCH"
+    BACKEND_UNREACHABLE = "BACKEND_UNREACHABLE"
+    BACKEND_NOT_READY = "BACKEND_NOT_READY"
+    AUDIO_DEVICE_UNAVAILABLE = "AUDIO_DEVICE_UNAVAILABLE"
+    AUDIO_PERMISSION_DENIED = "AUDIO_PERMISSION_DENIED"
+    AUDIO_CAPTURE_FAILED = "AUDIO_CAPTURE_FAILED"
+    AUDIO_RESAMPLE_FAILED = "AUDIO_RESAMPLE_FAILED"
+    MODEL_FILE_MISSING = "MODEL_FILE_MISSING"
+    MODEL_LOAD_FAILED = "MODEL_LOAD_FAILED"
+    LANGUAGE_CHAIN_INCOMPLETE = "LANGUAGE_CHAIN_INCOMPLETE"
+    ASR_REQUEST_FAILED = "ASR_REQUEST_FAILED"
+    TRANSLATE_REQUEST_FAILED = "TRANSLATE_REQUEST_FAILED"
+    TTS_REQUEST_FAILED = "TTS_REQUEST_FAILED"
+    PLAYBACK_QUEUE_OVERLOADED = "PLAYBACK_QUEUE_OVERLOADED"
+    SESSION_NOT_FOUND = "SESSION_NOT_FOUND"
+    SESSION_STATE_INVALID = "SESSION_STATE_INVALID"
+    HISTORY_SAVE_FAILED = "HISTORY_SAVE_FAILED"
+    INTERNAL_ERROR = "INTERNAL_ERROR"
+
+
+class ServiceError(Exception):
+    """An exception that maps cleanly to the wire-level error code."""
+
+    def __init__(self, code: ErrorCode, message: str = "") -> None:
+        super().__init__(message or code.value)
+        self.code = code
+        self.message = message or code.value

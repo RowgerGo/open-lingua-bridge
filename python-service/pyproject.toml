@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "olb-model-service"
+version = "0.1.0"
+description = "Local model service for open-lingua-bridge."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "open-lingua-bridge" }]
+license = { text = "MIT" }
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+    "pydantic>=2.5",
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "websockets>=12",
+    "python-multipart>=0.0.9",
+]
+
+[project.optional-dependencies]
+real = [
+    "faster-whisper>=1.0.0",
+    "silero-vad>=5.1",
+    "piper-tts>=1.2.0",
+    "sentencepiece>=0.1.99",
+    "transformers>=4.40",
+    "torch>=2.1",
+]
+test = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "httpx>=0.26",
+    "anyio>=4.2",
+]
+
+[project.scripts]
+olb-model-service = "olb.app:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
