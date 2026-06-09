@@ -86,14 +86,22 @@ def make_router(cfg: ServiceConfig, mm: ModelManager, sm: SessionManager) -> API
 
     @router.post("/core/session/precheck", response_model=None, dependencies=[auth])
     def precheck(body: PrecheckRequest) -> dict[str, Any]:
+        from ..providers.language import chain_check
+
+        voices = mm.list_voices()
+        report = chain_check(body.source_lang, body.target_lang, tts_voices=voices)
+        models_loaded = bool(getattr(mm, "_bundle", None) is not None)
         return Envelope(
             data={
-                "ready": True,
+                "ready": report["complete"] or not body.require_tts,
                 "checks": {
                     "audio_devices": {"ok": True, "details": body.devices},
                     "backend": {"ok": True},
-                    "models": {"ok": mm.bundle is not None if hasattr(mm, "bundle") else True},
-                    "language_chain": {"ok": True},
+                    "models": {"ok": models_loaded, "providers": mm.list_models()},
+                    "language_chain": {
+                        "ok": report["complete"],
+                        "missing": report["missing"],
+                    },
                 },
             }
         ).model_dump()
