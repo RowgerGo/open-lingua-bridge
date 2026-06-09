@@ -44,13 +44,13 @@ MVP 交付后应支持：
 
 主要任务：
 
-| 编号 | 任务 | 负责人模块 | 优先级 | 依赖 | 交付物 |
-|---|---|---|---|---|---|
-| P0-01 | 初始化 Tauri + Rust 工程结构 | Tauri/Rust | P0 | 无 | 可启动桌面应用骨架 |
-| P0-02 | 初始化 Python Model Service 工程结构 | Python | P0 | 无 | 可启动本地服务骨架 |
-| P0-03 | 定义统一配置目录、日志目录和运行时目录 | Rust/Python | P0 | P0-01, P0-02 | 配置与日志路径约定 |
-| P0-04 | 建立错误码、协议版本、基础类型常量 | Rust/Python | P0 | P0-01, P0-02 | 两端一致的基础枚举 |
-| P0-05 | 建立本地开发启动脚本 | 工程化 | P0 | P0-01, P0-02 | 一键启动 UI、Rust、Python 的开发命令 |
+| 编号 | 任务 | 负责人模块 | 优先级 | 依赖 | 交付物 | 状态 |
+|---|---|---|---|---|---|---|
+| P0-01 | 初始化 Tauri + Rust 工程结构 | Tauri/Rust | P0 | 无 | 可启动桌面应用骨架 | 已完成 |
+| P0-02 | 初始化 Python Model Service 工程结构 | Python | P0 | 无 | 可启动本地服务骨架 | 已完成 |
+| P0-03 | 定义统一配置目录、日志目录和运行时目录 | Rust/Python | P0 | P0-01, P0-02 | 配置与日志路径约定 | 已完成 |
+| P0-04 | 建立错误码、协议版本、基础类型常量 | Rust/Python | P0 | P0-01, P0-02 | 两端一致的基础枚举 | 已完成 |
+| P0-05 | 建立本地开发启动脚本 | 工程化 | P0 | P0-01, P0-02 | 一键启动 UI、Rust、Python 的开发命令 | 已完成 |
 
 验收标准：
 
@@ -65,15 +65,15 @@ MVP 交付后应支持：
 
 主要任务：
 
-| 编号 | 任务 | 负责人模块 | 优先级 | 依赖 | 交付物 |
-|---|---|---|---|---|---|
-| P1-01 | 实现 Rust Core 会话状态机 | Rust | P0 | P0-04 | idle/starting/running/paused/stopped/error 状态 |
-| P1-02 | 实现 Python 健康检查接口 | Python | P0 | P0-02 | `GET /health` |
-| P1-03 | 实现 Python 模型查询接口 | Python | P0 | P0-02 | `GET /models`、`GET /voices` |
-| P1-04 | 实现 Python 模型加载接口 | Python | P0 | P1-03 | `POST /models/load` |
-| P1-05 | 实现 Rust 到 Python 的 HTTP client | Rust | P0 | P1-02 | token、协议版本、错误响应处理 |
-| P1-06 | 实现 Tauri commands | Tauri/Rust | P0 | P1-01, P1-05 | start/pause/resume/stop/get_status/update_config |
-| P1-07 | 实现 Python sidecar 启停或外部服务连接 | Rust/Python | P1 | P1-02, P1-05 | 后端连接管理 |
+| 编号 | 任务 | 负责人模块 | 优先级 | 依赖 | 交付物 | 状态 |
+|---|---|---|---|---|---|---|
+| P1-01 | 实现 Rust Core 会话状态机 | Rust | P0 | P0-04 | idle/starting/running/paused/stopped/error 状态 | 已完成 |
+| P1-02 | 实现 Python 健康检查接口 | Python | P0 | P0-02 | `GET /health` | 已完成 |
+| P1-03 | 实现 Python 模型查询接口 | Python | P0 | P0-02 | `GET /models`、`GET /voices` | 已完成 |
+| P1-04 | 实现 Python 模型加载接口 | Python | P0 | P1-03 | `POST /models/load` | 已完成 |
+| P1-05 | 实现 Rust 到 Python 的 HTTP client | Rust | P0 | P1-02 | token、协议版本、错误响应处理 | 已完成 |
+| P1-06 | 实现 Tauri commands | Tauri/Rust | P0 | P1-01, P1-05 | start/pause/resume/stop/get_status/update_config | 已完成 |
+| P1-07 | 实现 Python sidecar 启停或外部服务连接 | Rust/Python | P1 | P1-02, P1-05 | 后端连接管理 | 已完成（外部服务连接模式） |
 
 验收标准：
 
@@ -89,15 +89,15 @@ MVP 交付后应支持：
 
 主要任务：
 
-| 编号 | 任务 | 负责人模块 | 优先级 | 依赖 | 交付物 |
-|---|---|---|---|---|---|
-| P2-01 | 实现 WebSocket server `WS /ws/session` | Python | P0 | P1-02 | Python 实时协议入口 |
-| P2-02 | 实现 Rust WebSocket client | Rust | P0 | P1-05 | 连接、重连、关闭、错误处理 |
-| P2-03 | 实现 `BaseMessage` 编解码 | Rust/Python | P0 | P0-04 | text JSON 消息互通 |
-| P2-04 | 实现 `BinaryFrameHeader` 编解码 | Rust/Python | P0 | P2-01, P2-02 | OLB1 binary frame 互通 |
-| P2-05 | 实现协议模拟 pipeline | Python | P0 | P2-03, P2-04 | 模拟 ASR/翻译/TTS 返回 |
-| P2-06 | 实现 Rust 事件总线到 UI | Rust/Tauri | P0 | P2-03 | 字幕、状态、错误事件推送 |
-| P2-07 | 添加协议级测试样例 | Rust/Python | P1 | P2-03, P2-04 | 编解码和错误场景测试 |
+| 编号 | 任务 | 负责人模块 | 优先级 | 依赖 | 交付物 | 状态 |
+|---|---|---|---|---|---|---|
+| P2-01 | 实现 WebSocket server `WS /ws/session` | Python | P0 | P1-02 | Python 实时协议入口 | 已完成 |
+| P2-02 | 实现 Rust WebSocket client | Rust | P0 | P1-05 | 连接、重连、关闭、错误处理 | 已完成（mock smoke test client） |
+| P2-03 | 实现 `BaseMessage` 编解码 | Rust/Python | P0 | P0-04 | text JSON 消息互通 | 已完成 |
+| P2-04 | 实现 `BinaryFrameHeader` 编解码 | Rust/Python | P0 | P2-01, P2-02 | OLB1 binary frame 互通 | 已完成 |
+| P2-05 | 实现协议模拟 pipeline | Python | P0 | P2-03, P2-04 | 模拟 ASR/翻译/TTS 返回 | 已完成 |
+| P2-06 | 实现 Rust 事件总线到 UI | Rust/Tauri | P0 | P2-03 | 字幕、状态、错误事件推送 | 已完成 |
+| P2-07 | 添加协议级测试样例 | Rust/Python | P1 | P2-03, P2-04 | 编解码和错误场景测试 | 已完成 |
 
 验收标准：
 
@@ -113,16 +113,16 @@ MVP 交付后应支持：
 
 主要任务：
 
-| 编号 | 任务 | 负责人模块 | 优先级 | 依赖 | 交付物 |
-|---|---|---|---|---|---|
-| P3-01 | 枚举输入/输出音频设备 | Rust | P0 | P0-01 | 设备列表与默认设备识别 |
-| P3-02 | 实现麦克风音频采集 | Rust | P0 | P3-01 | `audio_local` PCM 帧 |
-| P3-03 | 实现系统输出或指定设备音频采集 | Rust | P0 | P3-01 | `audio_remote` PCM 帧 |
-| P3-04 | 实现重采样与声道转换 | Rust | P0 | P3-02, P3-03 | 16 kHz mono `pcm_s16le` 输入 |
-| P3-05 | 实现音频分帧和 `sequence_no` 管理 | Rust | P0 | P3-04 | 稳定发送 `audio.frame` |
-| P3-06 | 实现分段调度和 `segment_id` 管理 | Rust | P0 | P3-05 | 分段生命周期 |
-| P3-07 | 实现 TTS 音频播放队列 | Rust | P0 | P2-04 | 播放 `tts.audio` payload |
-| P3-08 | 实现输出设备和虚拟麦克风路由 | Rust | P1 | P3-07 | 可选目标设备播放 |
+| 编号 | 任务 | 负责人模块 | 优先级 | 依赖 | 交付物 | 状态 |
+|---|---|---|---|---|---|---|
+| P3-01 | 枚举输入/输出音频设备 | Rust | P0 | P0-01 | 设备列表与默认设备识别 | 已完成 |
+| P3-02 | 实现麦克风音频采集 | Rust | P0 | P3-01 | `audio_local` PCM 帧 | 已完成 |
+| P3-03 | 实现系统输出或指定设备音频采集 | Rust | P0 | P3-01 | `audio_remote` PCM 帧 | 已完成（选定输入设备/系统配置的虚拟输入模式） |
+| P3-04 | 实现重采样与声道转换 | Rust | P0 | P3-02, P3-03 | 16 kHz mono `pcm_s16le` 输入 | 已完成 |
+| P3-05 | 实现音频分帧和 `sequence_no` 管理 | Rust | P0 | P3-04 | 稳定发送 `audio.frame` | 已完成 |
+| P3-06 | 实现分段调度和 `segment_id` 管理 | Rust | P0 | P3-05 | 分段生命周期 | 已完成 |
+| P3-07 | 实现 TTS 音频播放队列 | Rust | P0 | P2-04 | 播放 `tts.audio` payload | 已完成 |
+| P3-08 | 实现输出设备和虚拟麦克风路由 | Rust | P1 | P3-07 | 可选目标设备播放 | 已完成（不安装自研虚拟音频驱动） |
 
 验收标准：
 

@@ -87,6 +87,7 @@ impl SessionManager {
 
     pub fn fail(&mut self, error: ErrorCode) {
         self.state = SessionState::Error;
+        self.current_session_id = None;
         self.last_error = Some(error);
     }
 
@@ -155,8 +156,10 @@ mod tests {
     #[test]
     fn records_error_and_resets() {
         let mut sm = SessionManager::default();
+        sm.start().unwrap();
         sm.fail(ErrorCode::BackendUnreachable);
         assert_eq!(sm.state(), SessionState::Error);
+        assert_eq!(sm.current_session_id(), None);
         assert_eq!(sm.last_error(), Some(ErrorCode::BackendUnreachable));
         sm.reset().unwrap();
         assert_eq!(sm.state(), SessionState::Idle);
