@@ -18,6 +18,7 @@ from .runtime.http_api import make_router
 from .runtime.metrics import Metrics
 from .runtime.model_manager import ModelManager
 from .runtime.pipeline_orchestrator import PipelineOrchestrator
+from .runtime.segment_queue import SegmentQueueRegistry
 from .runtime.session_manager import SessionManager
 from .runtime.ws import make_ws_router
 from .schemas.protocol import Envelope
@@ -32,7 +33,8 @@ def build_app(cfg: ServiceConfig | None = None) -> FastAPI:
     mm = ModelManager(cfg)
     sm = SessionManager()
     metrics = Metrics()
-    orchestrator = PipelineOrchestrator(mm, sm, metrics)
+    queues = SegmentQueueRegistry()
+    orchestrator = PipelineOrchestrator(mm, sm, metrics, queue_registry=queues)
     app = FastAPI(title="open-lingua-bridge model service", version="0.1.0")
     app.include_router(make_router(cfg, mm, sm))
     app.include_router(make_ws_router(cfg, mm, sm, orchestrator))

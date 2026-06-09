@@ -1,6 +1,6 @@
 # 本地开发命令
 
-本文记录 P0 到 P3 落地后的最小开发与验证命令。
+本文记录 P0 到 P4 落地后的最小开发与验证命令。
 
 ## Python Model Service
 
@@ -11,6 +11,25 @@ uv run olb-model-service --port 8765
 ```
 
 服务默认监听 `127.0.0.1:8765`，控制 API 只使用 `GET` 和 `POST`，实时通道为 `WS /ws/session`。
+
+P4 在 mock provider 之外实现了本地真实模型：
+
+- VAD：`SileroVadProvider`（onnxruntime 本地 ONNX 路径），`EnergyVadProvider` 是 mock/缺依赖时的能量阈值 fallback。
+- ASR：`FasterWhisperProvider`（CTranslate2 Whisper），`MockAsrProvider` 用于测试和默认模式。
+- 翻译：`NllbTranslateProvider`（Hugging Face `transformers`），`DictionaryTranslateProvider` / `MockTranslateProvider` 是 mock。
+- TTS：`PiperTtsProvider`（onnxruntime Piper voice 目录），`MockTtsProvider` 是 mock。
+
+安装可选依赖（按角色细分）：
+
+```bash
+pip install -e ".[vad]"        # silero-vad / onnxruntime
+pip install -e ".[asr]"        # faster-whisper
+pip install -e ".[translate]"  # transformers + sentencepiece + torch
+pip install -e ".[tts]"        # piper-tts + onnxruntime
+pip install -e ".[real]"       # 上述四项合一
+```
+
+模型文件需本地存在，路径通过 `POST /models/load` 的 `config.vad.model_path` / `asr.model_path` / `translate.model_path` / `tts.voice_path` 传入；缺文件时返回 `MODEL_FILE_MISSING`。`POST /language-chain/check` 走 `olb.providers.language.chain_check` 做 FLORES ↔ Whisper ↔ Piper 三方映射校验，链路不完整返回 `LANGUAGE_CHAIN_INCOMPLETE`。P4-08 的 `SegmentQueueRegistry` 提供 per-session `max_pending` + `ttl_ms`，超限和过期段会以 `PLAYBACK_QUEUE_OVERLOADED` / 过期事件回报。
 
 ## Rust Core / Protocol
 

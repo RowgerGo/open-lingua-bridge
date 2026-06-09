@@ -72,18 +72,17 @@ def make_router(cfg: ServiceConfig, mm: ModelManager, sm: SessionManager) -> API
 
     @router.post("/language-chain/check", response_model=None, dependencies=[auth])
     def language_chain(body: LanguageChainRequest) -> dict[str, Any]:
-        voices = [v["language"] for v in mm.list_voices()]
-        asr_supported = True
-        tts_supported = body.target_lang in voices
-        return Envelope(
-            data={
-                "complete": asr_supported and (tts_supported or not body.require_tts),
-                "asr_supported": asr_supported,
-                "translate_supported": True,
-                "tts_supported": tts_supported,
-                "missing": [] if tts_supported else ["tts_voice"],
-            }
-        ).model_dump()
+        from ..providers.language import chain_check
+
+        voices = mm.list_voices()
+        report = chain_check(body.source_lang, body.target_lang, tts_voices=voices)
+        if not report["complete"] and body.require_tts:
+            missing = ",".join(report["missing"]) or "tts_voice"
+            raise ServiceError(
+                ErrorCode.LANGUAGE_CHAIN_INCOMPLETE,
+                f"language chain incomplete: missing {missing}",
+            )
+        return Envelope(data=report).model_dump()
 
     @router.post("/core/session/precheck", response_model=None, dependencies=[auth])
     def precheck(body: PrecheckRequest) -> dict[str, Any]:
@@ -101,6 +100,15 @@ def make_router(cfg: ServiceConfig, mm: ModelManager, sm: SessionManager) -> API
 
     @router.post("/backend/session/start", response_model=None, dependencies=[auth])
     def session_start(body: SessionStartRequest) -> dict[str, Any]:
+        from ..providers.language import chain_check
+
+        chain = chain_check(body.source_lang, body.target_lang, tts_voices=mm.list_voices())
+        if not chain["complete"]:
+            missing = ",".join(chain["missing"]) or "language_chain"
+            raise ServiceError(
+                ErrorCode.LANGUAGE_CHAIN_INCOMPLETE,
+                f"language chain incomplete: missing {missing}",
+            )
         try:
             state = sm.start(
                 source_lang=body.source_lang,
@@ -118,6 +126,7 @@ def make_router(cfg: ServiceConfig, mm: ModelManager, sm: SessionManager) -> API
                 "source_lang": state.source_lang,
                 "target_lang": state.target_lang,
                 "direction": state.direction,
+                "language_chain": chain,
             }
         ).model_dump()
 

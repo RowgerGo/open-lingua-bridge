@@ -36,3 +36,33 @@ class ServiceError(Exception):
         super().__init__(message or code.value)
         self.code = code
         self.message = message or code.value
+
+
+class ModelFileMissing(ServiceError):
+    def __init__(self, message: str = "") -> None:
+        super().__init__(ErrorCode.MODEL_FILE_MISSING, message)
+
+
+class ModelLoadFailed(ServiceError):
+    def __init__(self, message: str = "") -> None:
+        super().__init__(ErrorCode.MODEL_LOAD_FAILED, message)
+
+
+class AsrRequestFailed(ServiceError):
+    def __init__(self, message: str = "") -> None:
+        super().__init__(ErrorCode.ASR_REQUEST_FAILED, message)
+
+
+class TranslateRequestFailed(ServiceError):
+    def __init__(self, message: str = "") -> None:
+        super().__init__(ErrorCode.TRANSLATE_REQUEST_FAILED, message)
+
+
+class TtsRequestFailed(ServiceError):
+    def __init__(self, message: str = "") -> None:
+        super().__init__(ErrorCode.TTS_REQUEST_FAILED, message)
+
+
+class LanguageChainIncomplete(ServiceError):
+    def __init__(self, message: str = "") -> None:
+        super().__init__(ErrorCode.LANGUAGE_CHAIN_INCOMPLETE, message)

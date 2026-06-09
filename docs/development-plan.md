@@ -139,24 +139,24 @@ MVP 交付后应支持：
 
 主要任务：
 
-| 编号 | 任务 | 负责人模块 | 优先级 | 依赖 | 交付物 |
-|---|---|---|---|---|---|
-| P4-01 | 实现模型配置加载与路径校验 | Python | P0 | P1-04 | 模型可用性检查 |
-| P4-02 | 接入 silero-vad | Python | P0 | P4-01 | 语音活动检测能力 |
-| P4-03 | 接入 faster-whisper | Python | P0 | P4-01, P4-02 | ASR 临时/最终结果 |
-| P4-04 | 实现滚动缓冲和最终 flush | Python | P0 | P4-03 | 稳定分段识别 |
-| P4-05 | 接入 NLLB 翻译模型 | Python | P0 | P4-01 | `translate.result` |
-| P4-06 | 实现语言码映射和链路校验 | Python | P0 | P4-05 | ASR/翻译/TTS 语言兼容检查 |
-| P4-07 | 接入 Piper TTS | Python | P0 | P4-01, P4-06 | `tts.audio` binary frame |
-| P4-08 | 实现 pipeline 队列和过期任务丢弃 | Python | P1 | P4-03, P4-05, P4-07 | 低延迟调度策略 |
+| 编号 | 任务 | 负责人模块 | 优先级 | 依赖 | 交付物 | 状态 |
+|---|---|---|---|---|---|---|
+| P4-01 | 实现模型配置加载与路径校验 | Python | P0 | P1-04 | 模型可用性检查 | 已完成（`ModelFileMissing` / `ModelLoadFailed` 错误码 + 路径校验） |
+| P4-02 | 接入 silero-vad | Python | P0 | P4-01 | 语音活动检测能力 | 已完成（`SileroVadProvider`，onnxruntime 本地路径） |
+| P4-03 | 接入 faster-whisper | Python | P0 | P4-01, P4-02 | ASR 临时/最终结果 | 已完成（`FasterWhisperProvider`，partial/final 分支） |
+| P4-04 | 实现滚动缓冲和最终 flush | Python | P0 | P4-03 | 稳定分段识别 | 已完成（`RollingVad` + `flush()`） |
+| P4-05 | 接入 NLLB 翻译模型 | Python | P0 | P4-01 | `translate.result` | 已完成（`NllbTranslateProvider`，本地 HF checkpoint） |
+| P4-06 | 实现语言码映射和链路校验 | Python | P0 | P4-05 | ASR/翻译/TTS 语言兼容检查 | 已完成（`providers/language.py` + `language_chain_check`） |
+| P4-07 | 接入 Piper TTS | Python | P0 | P4-01, P4-06 | `tts.audio` binary frame | 已完成（`PiperTtsProvider`，本地 voice 目录 + ONNX） |
+| P4-08 | 实现 pipeline 队列和过期任务丢弃 | Python | P1 | P4-03, P4-05, P4-07 | 低延迟调度策略 | 已完成（`SegmentQueueRegistry`，`max_pending` + `ttl_ms`） |
 
 验收标准：
 
-- Python 服务可以加载并检查 VAD、ASR、翻译和 TTS 模型。
-- 输入 `audio.frame` 后可以产生 ASR 结果、翻译结果和 TTS 音频。
-- 对同一 `segment_id`，`asr.final` 和 `translate.result` 只发送一次。
-- 模型文件缺失、语言链路不完整、TTS voice 不可用时返回明确错误。
-- 模型处理慢于实时输入时能够限制队列并丢弃过期任务。
+- Python 服务可以加载并检查 VAD、ASR、翻译和 TTS 模型。 ✔ `GET /models` + `POST /models/load` + `ModelManager` 路径校验。
+- 输入 `audio.frame` 后可以产生 ASR 结果、翻译结果和 TTS 音频。 ✔ Pipeline orchestrator + WebSocket `WS /ws/session`。
+- 对同一 `segment_id`，`asr.final` 和 `translate.result` 只发送一次。 ✔ `SessionManager.mark_asr_final` / `mark_translate` 单次锁。
+- 模型文件缺失、语言链路不完整、TTS voice 不可用时返回明确错误。 ✔ `MODEL_FILE_MISSING` / `MODEL_LOAD_FAILED` / `LANGUAGE_CHAIN_INCOMPLETE` / `TTS_REQUEST_FAILED`。
+- 模型处理慢于实时输入时能够限制队列并丢弃过期任务。 ✔ `SegmentQueue` `max_pending` 上限 + `ttl_ms` 过期清理。
 
 ### 3.6 P5：桌面 UI 与用户体验
 
