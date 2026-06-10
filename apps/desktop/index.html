@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230d1715'/%3E%3Cpath d='M16 35c8-18 24-18 32 0' fill='none' stroke='%237ee0b8' stroke-width='6' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='25' r='4' fill='%23ffd166'/%3E%3Ccircle cx='42' cy='25' r='4' fill='%23b7ffd9'/%3E%3C/svg%3E" />
     <title>open-lingua-bridge</title>
     <style>
       :root {
@@ -10,356 +11,141 @@
         background: #0d1715;
         font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", sans-serif;
         --color-bg: #0d1715;
-        --color-surface: rgba(20, 38, 34, 0.86);
-        --color-surface-strong: #182d28;
+        --color-bg-deep: #0a1110;
+        --color-bg-glow: #12201d;
+        --color-surface: rgba(20, 38, 34, 0.88);
+        --color-surface-soft: rgba(8, 18, 16, 0.58);
+        --color-surface-field: rgba(8, 18, 16, 0.72);
         --color-border: rgba(140, 183, 169, 0.24);
+        --color-border-soft: rgba(140, 183, 169, 0.14);
         --color-text: #e8f3ef;
         --color-muted: #9fb8b0;
         --color-accent: #7ee0b8;
         --color-accent-strong: #b7ffd9;
         --color-warning: #ffd166;
         --color-danger: #ff7a7a;
+        --color-danger-text: #ffd9d9;
+        --color-ink-on-accent: #071311;
         --space-1: 4px;
         --space-2: 8px;
         --space-3: 12px;
         --space-4: 16px;
         --space-5: 24px;
         --space-6: 32px;
+        --space-7: 48px;
         --radius-sm: 10px;
         --radius-md: 16px;
         --radius-lg: 24px;
         --shadow-panel: 0 18px 60px rgba(0, 0, 0, 0.32);
+        --shadow-focus: 0 0 0 3px rgba(126, 224, 184, 0.18);
       }
 
-      * {
-        box-sizing: border-box;
-      }
-
+      * { box-sizing: border-box; }
       body {
         min-width: 720px;
         min-height: 100vh;
         margin: 0;
         background:
-          radial-gradient(circle at 12% 12%, rgba(126, 224, 184, 0.18), transparent 34%),
-          radial-gradient(circle at 86% 8%, rgba(255, 209, 102, 0.12), transparent 28%),
-          linear-gradient(145deg, #0a1110 0%, var(--color-bg) 46%, #12201d 100%);
+          radial-gradient(circle at 10% 12%, rgba(126, 224, 184, 0.18), transparent 34%),
+          radial-gradient(circle at 88% 8%, rgba(255, 209, 102, 0.12), transparent 28%),
+          linear-gradient(145deg, var(--color-bg-deep) 0%, var(--color-bg) 46%, var(--color-bg-glow) 100%);
       }
-
+      button, input, select { font: inherit; }
       button {
         border: 1px solid var(--color-border);
         border-radius: var(--radius-sm);
         padding: var(--space-3) var(--space-4);
         color: var(--color-text);
         background: rgba(126, 224, 184, 0.1);
-        font: inherit;
         cursor: pointer;
         transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
       }
+      button:hover:not(:disabled) { border-color: rgba(126, 224, 184, 0.74); background: rgba(126, 224, 184, 0.18); transform: translateY(-1px); }
+      button:focus-visible, input:focus-visible, select:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
+      button:disabled { cursor: not-allowed; opacity: 0.48; }
+      input, select { width: 100%; border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: var(--space-3); color: var(--color-text); background: var(--color-surface-field); }
 
-      button:hover:not(:disabled) {
-        border-color: rgba(126, 224, 184, 0.74);
-        background: rgba(126, 224, 184, 0.18);
-        transform: translateY(-1px);
-      }
-
-      button:disabled {
-        cursor: not-allowed;
-        opacity: 0.48;
-      }
-
-      .app-shell {
-        width: min(1180px, calc(100vw - var(--space-6) * 2));
-        margin: 0 auto;
-        padding: var(--space-6) 0;
-      }
-
-      .hero {
-        display: flex;
-        justify-content: space-between;
-        gap: var(--space-5);
-        align-items: flex-end;
-        margin-bottom: var(--space-5);
-      }
-
-      .eyebrow {
-        margin: 0 0 var(--space-2);
-        color: var(--color-accent);
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        font-size: 12px;
-      }
-
-      h1 {
-        margin: 0;
-        font-size: clamp(34px, 5vw, 58px);
-        line-height: 1;
-      }
-
-      .hero p {
-        max-width: 560px;
-        margin: var(--space-3) 0 0;
-        color: var(--color-muted);
-        line-height: 1.7;
-      }
-
-      .status-pill {
-        min-width: 220px;
-        border: 1px solid var(--color-border);
-        border-radius: 999px;
-        padding: var(--space-3) var(--space-4);
-        color: var(--color-accent-strong);
-        background: rgba(13, 23, 21, 0.72);
-        text-align: center;
-      }
-
-      .grid {
-        display: grid;
-        grid-template-columns: 0.86fr 1.14fr;
-        gap: var(--space-5);
-      }
-
-      .panel {
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-lg);
-        padding: var(--space-5);
-        background: var(--color-surface);
-        box-shadow: var(--shadow-panel);
-        backdrop-filter: blur(20px);
-      }
-
-      .panel h2 {
-        margin: 0 0 var(--space-4);
-        font-size: 20px;
-      }
-
-      .controls {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: var(--space-3);
-      }
-
-      .primary-action {
-        color: #071311;
-        border-color: transparent;
-        background: linear-gradient(135deg, var(--color-accent), var(--color-accent-strong));
-        font-weight: 700;
-      }
-
-      .status-list {
-        display: grid;
-        gap: var(--space-3);
-        margin: var(--space-5) 0 0;
-      }
-
-      .status-row {
-        display: flex;
-        justify-content: space-between;
-        gap: var(--space-4);
-        border-bottom: 1px solid rgba(140, 183, 169, 0.12);
-        padding-bottom: var(--space-3);
-      }
-
-      .status-label {
-        color: var(--color-muted);
-      }
-
-      .status-value {
-        max-width: 58%;
-        overflow-wrap: anywhere;
-        text-align: right;
-      }
-
-      .field-list {
-        display: grid;
-        gap: var(--space-3);
-        margin-top: var(--space-5);
-      }
-
-      label {
-        display: grid;
-        gap: var(--space-2);
-        color: var(--color-muted);
-      }
-
-      select {
-        width: 100%;
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-        padding: var(--space-3);
-        color: var(--color-text);
-        background: rgba(8, 18, 16, 0.72);
-        font: inherit;
-      }
-
-      .error-box {
-        min-height: 52px;
-        margin-top: var(--space-5);
-        border: 1px solid rgba(255, 122, 122, 0.28);
-        border-radius: var(--radius-md);
-        padding: var(--space-4);
-        color: #ffd9d9;
-        background: rgba(255, 122, 122, 0.09);
-        line-height: 1.6;
-      }
-
-      .event-layout {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: var(--space-4);
-      }
-
-      .stream {
-        min-height: 280px;
-      }
-
-      .stream h3 {
-        display: flex;
-        justify-content: space-between;
-        margin: 0 0 var(--space-3);
-        color: var(--color-accent-strong);
-        font-size: 15px;
-      }
-
-      .event-list {
-        display: grid;
-        max-height: 320px;
-        overflow: auto;
-        gap: var(--space-3);
-        padding-right: var(--space-1);
-      }
-
-      .event-item {
-        border: 1px solid rgba(140, 183, 169, 0.16);
-        border-radius: var(--radius-md);
-        padding: var(--space-3);
-        background: rgba(8, 18, 16, 0.58);
-      }
-
-      .event-meta {
-        display: flex;
-        justify-content: space-between;
-        gap: var(--space-3);
-        margin-bottom: var(--space-2);
-        color: var(--color-muted);
-        font-size: 12px;
-      }
-
-      .event-text {
-        margin: 0;
-        color: var(--color-text);
-        line-height: 1.6;
-        white-space: pre-wrap;
-      }
-
-      .raw-events {
-        margin-top: var(--space-4);
-      }
-
-      .raw-events .event-list {
-        max-height: 190px;
-      }
-
-      .empty-state {
-        border: 1px dashed rgba(140, 183, 169, 0.26);
-        border-radius: var(--radius-md);
-        padding: var(--space-4);
-        color: var(--color-muted);
-        line-height: 1.6;
-      }
+      .app-shell { width: min(1320px, calc(100vw - var(--space-6) * 2)); margin: 0 auto; padding: var(--space-6) 0 var(--space-7); }
+      .hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-5); align-items: end; margin-bottom: var(--space-5); }
+      .eyebrow { margin: 0 0 var(--space-2); color: var(--color-accent); letter-spacing: 0.12em; text-transform: uppercase; }
+      h1 { margin: 0; font-size: clamp(34px, 5vw, 64px); line-height: 0.95; }
+      h2, h3 { margin-top: 0; }
+      .hero p:last-child { max-width: 780px; color: var(--color-muted); line-height: 1.7; }
+      .status-pill { border: 1px solid var(--color-border); border-radius: 999px; padding: var(--space-3) var(--space-4); color: var(--color-accent-strong); background: rgba(126, 224, 184, 0.1); white-space: nowrap; }
+      .layout { display: grid; grid-template-columns: minmax(320px, 0.85fr) minmax(0, 1.6fr); gap: var(--space-5); align-items: start; }
+      .stack, .status-list, .field-list, .precheck-list { display: grid; gap: var(--space-3); }
+      .stack { gap: var(--space-5); }
+      .panel { border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: var(--space-5); background: var(--color-surface); box-shadow: var(--shadow-panel); backdrop-filter: blur(20px); }
+      .panel-title { display: flex; justify-content: space-between; gap: var(--space-4); align-items: start; margin-bottom: var(--space-4); }
+      .panel-title h2 { margin: 0; font-size: 20px; }
+      .panel-title p, .hint { margin: var(--space-1) 0 0; color: var(--color-muted); line-height: 1.6; }
+      .controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+      .primary-action { color: var(--color-ink-on-accent); border-color: transparent; background: linear-gradient(135deg, var(--color-accent), var(--color-accent-strong)); font-weight: 700; }
+      .wide-action, .field-grid .full { grid-column: 1 / -1; }
+      .status-list { margin-top: var(--space-5); }
+      .status-row { display: flex; justify-content: space-between; gap: var(--space-4); border-bottom: 1px solid var(--color-border-soft); padding-bottom: var(--space-3); }
+      .status-label, label { color: var(--color-muted); }
+      .status-value { max-width: 58%; overflow-wrap: anywhere; text-align: right; }
+      label { display: grid; gap: var(--space-2); }
+      .field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+      .checkbox-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); border: 1px solid var(--color-border-soft); border-radius: var(--radius-md); padding: var(--space-3); color: var(--color-muted); background: var(--color-surface-soft); }
+      .checkbox-row input { width: auto; }
+      .precheck-list { margin: 0; padding: 0; list-style: none; }
+      .precheck-list li { border: 1px solid var(--color-border-soft); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); color: var(--color-muted); background: var(--color-surface-soft); }
+      .precheck-list li.ok { color: var(--color-accent-strong); }
+      .precheck-list li.missing { color: var(--color-danger-text); border-color: rgba(255, 122, 122, 0.3); background: rgba(255, 122, 122, 0.1); }
+      .error-box { min-height: 96px; border: 1px solid rgba(255, 122, 122, 0.28); border-radius: var(--radius-md); padding: var(--space-4); color: var(--color-danger-text); background: rgba(255, 122, 122, 0.1); line-height: 1.6; white-space: pre-wrap; }
+      .recovery-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-3); }
+      .metrics-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-3); }
+      .metric-card, .event-item { border: 1px solid var(--color-border-soft); border-radius: var(--radius-md); padding: var(--space-3); background: var(--color-surface-soft); }
+      .metric-card span { display: block; color: var(--color-muted); font-size: 12px; }
+      .metric-card strong { display: block; margin-top: var(--space-2); color: var(--color-accent-strong); font-size: 22px; }
+      .subtitle-layout { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+      .stream { min-height: 320px; }
+      .stream h3 { display: flex; justify-content: space-between; margin: 0 0 var(--space-3); color: var(--color-accent-strong); font-size: 15px; }
+      .event-list { display: grid; max-height: 360px; overflow: auto; gap: var(--space-3); padding-right: var(--space-1); }
+      .event-meta { display: flex; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-2); color: var(--color-muted); font-size: 12px; }
+      .event-text { margin: 0; color: var(--color-text); line-height: 1.6; white-space: pre-wrap; }
+      .raw-events { margin-top: var(--space-4); }
+      .raw-events .event-list { max-height: 220px; }
+      .empty-state { border: 1px dashed rgba(140, 183, 169, 0.26); border-radius: var(--radius-md); padding: var(--space-4); color: var(--color-muted); line-height: 1.6; }
+      .diagnostic-path { margin-top: var(--space-3); color: var(--color-muted); overflow-wrap: anywhere; }
+      @media (max-width: 1040px) { body { min-width: 0; } .app-shell { width: min(100% - var(--space-4) * 2, 920px); } .hero, .layout, .subtitle-layout, .metrics-grid, .field-grid { grid-template-columns: 1fr; } .status-pill { justify-self: start; } .status-value { max-width: 66%; } }
     </style>
   </head>
   <body>
     <main id="app" class="app-shell">
       <section class="hero" aria-labelledby="page-title">
         <div>
-          <p class="eyebrow">Local-first realtime bridge</p>
+          <p class="eyebrow">Local-first realtime bridge · P5 desktop UX</p>
           <h1 id="page-title">open-lingua-bridge</h1>
-          <p>本地优先的实时通话翻译控制台。这里显示后端连接、会话状态，以及 Rust 从模型服务转发的模拟实时字幕事件。</p>
+          <p>本地优先的实时通话翻译工作台：完成配置、预检、启动链路、观察双向字幕、处理错误并导出不含转写/译文正文的诊断快照。</p>
         </div>
         <div id="backend-pill" class="status-pill">后端：等待检查</div>
       </section>
-
-      <section class="grid" aria-label="桌面端控制台">
-        <div class="panel">
-          <h2>会话控制</h2>
-          <div class="controls" aria-label="会话操作">
-            <button id="start-button" class="primary-action" type="button">开始会话</button>
-            <button id="audio-start-button" type="button">开始音频链路</button>
-            <button id="pause-button" type="button">暂停</button>
-            <button id="resume-button" type="button">继续</button>
-            <button id="stop-button" type="button">停止</button>
-            <button id="status-button" type="button">刷新状态</button>
-            <button id="devices-button" type="button">刷新设备</button>
-          </div>
-
-          <div class="field-list" aria-label="音频设备选择">
-            <label>
-              本方麦克风
-              <select id="local-input-device"><option value="">默认输入设备</option></select>
-            </label>
-            <label>
-              对方音频输入
-              <select id="remote-input-device"><option value="">不采集对方音频</option></select>
-            </label>
-            <label>
-              TTS 播放输出
-              <select id="output-device"><option value="">默认输出设备</option></select>
-            </label>
-            <label>
-              虚拟麦克风输出
-              <select id="virtual-output-device"><option value="">不路由到虚拟麦克风</option></select>
-            </label>
-          </div>
-
-          <div class="status-list" aria-live="polite">
-            <div class="status-row">
-              <span class="status-label">后端状态</span>
-              <strong id="backend-status" class="status-value">等待检查</strong>
+      <section class="layout" aria-label="桌面端控制台">
+        <aside class="stack">
+          <div class="panel">
+            <div class="panel-title"><div><h2>状态概览</h2><p>Rust/Tauri 控制面状态，不承载实时音频 payload。</p></div></div>
+            <div class="controls" aria-label="会话操作">
+              <button id="start-button" class="primary-action" type="button">启动预检并开始</button><button id="audio-start-button" type="button">启动音频链路</button><button id="pause-button" type="button">暂停</button><button id="resume-button" type="button">继续</button><button id="stop-button" type="button">停止</button><button id="precheck-button" type="button">运行预检</button><button id="status-button" type="button">刷新状态</button><button id="devices-button" type="button">刷新设备</button><button id="export-diagnostics-button" class="wide-action" type="button">导出诊断快照</button><button id="copy-diagnostics-button" type="button">复制诊断摘要</button>
             </div>
-            <div class="status-row">
-              <span class="status-label">会话状态</span>
-              <strong id="session-state" class="status-value">未知</strong>
-            </div>
-            <div class="status-row">
-              <span class="status-label">当前会话</span>
-              <strong id="session-id" class="status-value">无</strong>
-            </div>
-            <div class="status-row">
-              <span class="status-label">协议版本</span>
-              <strong id="protocol-version" class="status-value">未知</strong>
-            </div>
-            <div class="status-row">
-              <span class="status-label">音频格式</span>
-              <strong id="audio-format" class="status-value">等待设备</strong>
+            <div class="status-list" aria-live="polite">
+              <div class="status-row"><span class="status-label">后端状态</span><strong id="backend-status" class="status-value">等待检查</strong></div><div class="status-row"><span class="status-label">会话状态</span><strong id="session-state" class="status-value">未知</strong></div><div class="status-row"><span class="status-label">当前会话</span><strong id="session-id" class="status-value">无</strong></div><div class="status-row"><span class="status-label">模型状态</span><strong id="model-status" class="status-value">等待预检</strong></div><div class="status-row"><span class="status-label">语言方向</span><strong id="language-direction" class="status-value">zh-CN -> en-US</strong></div><div class="status-row"><span class="status-label">协议版本</span><strong id="protocol-version" class="status-value">未知</strong></div><div class="status-row"><span class="status-label">音频格式</span><strong id="audio-format" class="status-value">16 kHz / mono / pcm_s16le</strong></div><div class="status-row"><span class="status-label">隐私默认</span><strong id="privacy-status" class="status-value">不保存录音/文本</strong></div>
             </div>
           </div>
-
-          <div id="error-output" class="error-box" role="status">如果本地 Python Model Service 未启动，这里会显示可读的连接说明。</div>
-        </div>
-
-        <div class="panel">
-          <h2>实时字幕与事件</h2>
-          <div class="event-layout">
-            <section class="stream" aria-labelledby="transcript-title">
-              <h3 id="transcript-title"><span>原文转写</span><span id="transcript-count">0</span></h3>
-              <div id="transcript-list" class="event-list">
-                <div class="empty-state">等待 `olb://transcript` 事件。收到后会显示 segment_id 与 text。</div>
-              </div>
-            </section>
-            <section class="stream" aria-labelledby="translation-title">
-              <h3 id="translation-title"><span>译文</span><span id="translation-count">0</span></h3>
-              <div id="translation-list" class="event-list">
-                <div class="empty-state">等待 `olb://translation` 事件。收到后会显示 segment_id 与 text。</div>
-              </div>
-            </section>
-          </div>
-
-          <section class="raw-events" aria-labelledby="events-title">
-            <h3 id="events-title">后端 / 会话 / TTS / 错误事件</h3>
-            <div id="event-list" class="event-list">
-              <div class="empty-state">正在监听 olb://backend、olb://session、olb://tts、olb://error。</div>
+          <div class="panel"><div class="panel-title"><div><h2>启动前预检</h2><p>缺失必填配置会阻止启动，避免进入半连接状态。</p></div><span id="precheck-summary">尚未运行</span></div><ul id="precheck-list" class="precheck-list" aria-live="polite"></ul></div>
+          <div class="panel"><div class="panel-title"><div><h2>错误与恢复</h2><p>尽量拆出 type/code/module/action，便于定位本地链路问题。</p></div></div><div id="error-output" class="error-box" role="status">等待操作。本应用默认不保存录音、转写文本和翻译文本。</div><div class="recovery-actions"><button id="recover-button" type="button">刷新并恢复</button><button id="clear-events-button" type="button">清空事件</button></div></div>
+        </aside>
+        <div class="stack">
+          <div class="panel">
+            <div class="panel-title"><div><h2>基础设置</h2><p>设备、语言、模型路径、TTS voice 与后端配置；后端默认是本地地址，不提供云默认。</p></div><button id="save-config-button" type="button">应用设置</button></div>
+            <div class="field-grid" aria-label="基础设置表单">
+              <label>本方麦克风<select id="local-input-device"><option value="">默认输入设备</option></select></label><label>对方音频输入<select id="remote-input-device"><option value="">不采集对方音频</option></select></label><label>TTS 播放输出<select id="output-device"><option value="">默认输出设备</option></select></label><label>虚拟麦克风输出<select id="virtual-output-device"><option value="">不路由到虚拟麦克风</option></select></label><label>本方语言<select id="local-language"><option value="zh-CN">中文 zh-CN</option><option value="en-US">英语 en-US</option><option value="ja-JP">日语 ja-JP</option><option value="ko-KR">韩语 ko-KR</option></select></label><label>对方语言<select id="remote-language"><option value="en-US">英语 en-US</option><option value="zh-CN">中文 zh-CN</option><option value="ja-JP">日语 ja-JP</option><option value="ko-KR">韩语 ko-KR</option></select></label><label class="full">VAD 模型路径<input id="vad-model-path" type="text" placeholder="例如 C:\\models\\silero_vad.onnx" autocomplete="off" /></label><label class="full">ASR 模型路径<input id="asr-model-path" type="text" placeholder="例如 C:\\models\\faster-whisper-small" autocomplete="off" /></label><label class="full">翻译模型路径<input id="translate-model-path" type="text" placeholder="例如 C:\\models\\nllb-200" autocomplete="off" /></label><label>TTS voice 名称<input id="tts-voice" type="text" placeholder="例如 en_US-lessac-medium" autocomplete="off" /></label><label>后端 Base URL<input id="backend-base-url" type="url" value="http://127.0.0.1:8765" autocomplete="off" /></label><label class="full">后端 Token<input id="auth-token" type="password" value="dev-token" autocomplete="off" /></label><button id="swap-language-button" type="button">交换语言方向</button><div class="checkbox-row"><span>保存录音（默认关闭）</span><input id="save-recording" type="checkbox" /></div><div class="checkbox-row"><span>保存转写文本（默认关闭）</span><input id="save-transcript" type="checkbox" /></div><div class="checkbox-row"><span>保存翻译文本（默认关闭）</span><input id="save-translation" type="checkbox" /></div>
             </div>
-          </section>
+          </div>
+          <div class="panel"><div class="panel-title"><div><h2>延迟与队列</h2><p>从事件 payload 中提取 ASR / 翻译 / TTS / 端到端延迟和队列状态；没有上报时显示等待。</p></div></div><div class="metrics-grid" aria-live="polite"><div class="metric-card"><span>ASR 延迟</span><strong id="asr-latency">等待</strong></div><div class="metric-card"><span>翻译延迟</span><strong id="translate-latency">等待</strong></div><div class="metric-card"><span>TTS 延迟</span><strong id="tts-latency">等待</strong></div><div class="metric-card"><span>端到端 / 队列</span><strong id="e2e-latency">等待</strong></div></div></div>
+          <div class="panel"><div class="panel-title"><div><h2>双向字幕</h2><p>仅显示运行时事件；诊断导出默认只记录计数和最近 segment_id，不保存正文。</p></div></div><div class="subtitle-layout"><section class="stream" aria-labelledby="transcript-title"><h3 id="transcript-title"><span>原文转写</span><span id="transcript-count">0</span></h3><div id="transcript-list" class="event-list"><div class="empty-state">等待 `olb://transcript` 事件。收到后会显示方向、时间戳、segment_id 与文本。</div></div></section><section class="stream" aria-labelledby="translation-title"><h3 id="translation-title"><span>译文</span><span id="translation-count">0</span></h3><div id="translation-list" class="event-list"><div class="empty-state">等待 `olb://translation` 事件。收到后会显示方向、时间戳、segment_id 与文本。</div></div></section></div><section class="raw-events" aria-labelledby="events-title"><h3 id="events-title">后端 / 会话 / 音频 / TTS / 错误事件</h3><div id="event-list" class="event-list"><div class="empty-state">事件监听已注册，等待 Rust emit。</div></div></section><div class="diagnostic-path">事件计数：<span id="event-count">0</span> · 诊断：<span id="diagnostic-status">未导出</span></div></div>
         </div>
       </section>
     </main>

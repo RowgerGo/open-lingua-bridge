@@ -164,23 +164,23 @@ MVP 交付后应支持：
 
 主要任务：
 
-| 编号 | 任务 | 负责人模块 | 优先级 | 依赖 | 交付物 |
-|---|---|---|---|---|---|
-| P5-01 | 实现主界面状态区 | Tauri UI | P0 | P1-06 | 会话状态、后端状态、模型状态 |
-| P5-02 | 实现实时字幕面板 | Tauri UI | P0 | P2-06 | 原文、译文、方向、时间戳 |
-| P5-03 | 实现基础设置界面 | Tauri UI | P0 | P3-01, P1-03 | 设备、语言、模型、TTS voice |
-| P5-04 | 实现启动前预检提示 | Tauri UI/Rust | P0 | P1-06, P4-06 | 缺失配置阻止启动 |
-| P5-05 | 实现延迟与队列指标展示 | Tauri UI/Rust/Python | P1 | P4-08 | ASR/翻译/TTS/端到端延迟 |
-| P5-06 | 实现错误提示和恢复操作 | Tauri UI | P0 | P1-06 | 后端不可达、设备不可用、模型失败提示 |
-| P5-07 | 实现诊断信息导出 | Tauri UI/Rust/Python | P1 | P5-05 | 日志和运行状态导出 |
+| 编号 | 任务 | 负责人模块 | 优先级 | 依赖 | 交付物 | 状态 |
+|---|---|---|---|---|---|---|
+| P5-01 | 实现主界面状态区 | Tauri UI | P0 | P1-06 | 会话状态、后端状态、模型状态 | 已完成（`apps/desktop/index.html` 状态概览 + `get_status` 渲染） |
+| P5-02 | 实现实时字幕面板 | Tauri UI | P0 | P2-06 | 原文、译文、方向、时间戳 | 已完成（双向字幕面板监听 `olb://transcript` / `olb://translation`） |
+| P5-03 | 实现基础设置界面 | Tauri UI | P0 | P3-01, P1-03 | 设备、语言、模型、TTS voice | 已完成（设备、语言、本地模型路径、TTS voice、后端和隐私开关，并同步到 Rust runtime） |
+| P5-04 | 实现启动前预检提示 | Tauri UI/Rust | P0 | P1-06, P4-06 | 缺失配置阻止启动 | 已完成（UI 预检 + Rust `precheck_runtime_config` 调用 `POST /models/load`，失败时阻止启动） |
+| P5-05 | 实现延迟与队列指标展示 | Tauri UI/Rust/Python | P1 | P4-08 | ASR/翻译/TTS/端到端延迟 | 已完成（从事件 payload 提取 latency / queue 指标，未上报时显示等待） |
+| P5-06 | 实现错误提示和恢复操作 | Tauri UI | P0 | P1-06 | 后端不可达、设备不可用、模型失败提示 | 已完成（错误 type/code/module/action 拆解 + 刷新后端/设备/停止复位操作） |
+| P5-07 | 实现诊断信息导出 | Tauri UI/Rust/Python | P1 | P5-05 | 日志和运行状态导出 | 已完成（`export_diagnostics` 本地 JSON 快照，默认不含录音/转写/翻译正文） |
 
 验收标准：
 
-- 用户可以在 UI 中配置设备、语言和模型路径。
-- 用户可以启动、暂停、恢复、停止会话。
-- UI 可以展示两路字幕和链路状态。
-- 错误提示包含错误类型、涉及模块和建议操作。
-- 默认不保存录音、转写文本和翻译文本。
+- 用户可以在 UI 中配置设备、语言和模型路径。✔ 桌面端基础设置覆盖 device IDs、local/remote language、VAD/ASR/Translate 路径、TTS voice、backend base URL/token，并进入 Rust runtime。
+- 用户可以启动、暂停、恢复、停止会话。✔ 启动前执行 UI 预检和 Rust/Python `POST /models/load` 预检；缺失必填配置或模型加载失败会阻止启动。
+- UI 可以展示两路字幕和链路状态。✔ 状态概览 + 双向字幕 + 后端/会话/音频/TTS/错误事件流。
+- 错误提示包含错误类型、涉及模块和建议操作。✔ 由错误字符串和事件 code 推导 type/code/module/action。
+- 默认不保存录音、转写文本和翻译文本。✔ privacy 开关默认 false；诊断导出默认只含状态、配置摘要、计数、指标和去正文事件摘要。
 
 ### 3.7 P6：端到端联调、测试与发布准备
 

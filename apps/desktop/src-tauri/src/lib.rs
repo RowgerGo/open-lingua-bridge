@@ -1,11 +1,13 @@
 use olb_core::{
     capture_audio_frames, default_capture_config, enumerate_audio_devices, run_mock_realtime_smoke_test, run_realtime_audio_smoke_test,
-    AudioDevices, AudioError, AudioRouteConfig, CapturedAudioFrame, CoreConfig, ModelServiceClient, RealtimeClientError, RealtimeEvent,
+    AudioDevices, AudioError, AudioRouteConfig, CapturedAudioFrame, CoreConfig, ModelLoadRequest, ModelServiceClient, RealtimeClientError, RealtimeEvent,
     RealtimeEventKind, SessionManager, SessionState,
 };
 use olb_protocol::{Direction, ErrorCode, StreamId, PROTOCOL_VERSION};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::sync::Mutex;
+use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter};
 
 #[derive(Debug, Serialize)]
@@ -41,15 +43,53 @@ struct AudioSessionRequest {
     remote_input_device_id: Option<String>,
     output_device_id: Option<String>,
     virtual_microphone_device_id: Option<String>,
+    runtime: Option<RuntimeConfigUpdate>,
 }
 
 #[derive(Debug, Deserialize)]
 struct ConfigUpdate {
     backend_base_url: Option<String>,
     auth_token: Option<String>,
+    client_name: Option<String>,
+    runtime: Option<RuntimeConfigUpdate>,
     save_recording: Option<bool>,
     save_transcript: Option<bool>,
     save_translation: Option<bool>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+struct RuntimeConfigUpdate {
+    local_language: Option<String>,
+    remote_language: Option<String>,
+    vad_model_path: Option<String>,
+    asr_model_path: Option<String>,
+    translate_model_path: Option<String>,
+    tts_voice: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+struct RuntimeConfig {
+    local_language: String,
+    remote_language: String,
+    vad_model_path: String,
+    asr_model_path: String,
+    translate_model_path: String,
+    tts_voice: String,
+}
+
+#[derive(Debug, Serialize)]
+struct RuntimePrecheckResponse {
+    ok: bool,
+    code: String,
+    message: String,
+    loaded: Vec<String>,
+    failed: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct DiagnosticSnapshot {
+    #[serde(flatten)]
+    value: Value,
 }
 
 #[tauri::command]
@@ -61,6 +101,13 @@ fn update_config(state: tauri::State<'_, AppState>, update: ConfigUpdate) -> Res
     if let Some(auth_token) = update.auth_token {
         config.backend.auth_token = auth_token;
     }
+    if let Some(client_name) = update.client_name {
+        config.backend.client_name = client_name;
+    }
+    if let Some(runtime) = update.runtime {
+        let mut current = state.runtime.lock().map_err(|err| err.to_string())?;
+        current.apply(runtime);
+    }
     if let Some(save_recording) = update.save_recording {
         config.privacy.save_recording = save_recording;
     }
@@ -71,6 +118,68 @@ fn update_config(state: tauri::State<'_, AppState>, update: ConfigUpdate) -> Res
         config.privacy.save_translation = save_translation;
     }
     Ok(config.clone())
+}
+
+#[tauri::command]
+async fn precheck_runtime_config(state: tauri::State<'_, AppState>, runtime: RuntimeConfigUpdate) -> Result<RuntimePrecheckResponse, String> {
+    let runtime = merge_runtime_config(&state, runtime)?;
+    runtime.validate()?;
+    let config = config_snapshot(&state)?;
+    let client = ModelServiceClient::new(&config.backend).map_err(|err| err.to_string())?;
+    let request = runtime.model_load_request();
+    let response = client.load_model(&request).await.map_err(|err| err.to_string())?;
+    let loaded = response
+        .data
+        .as_ref()
+        .and_then(|data| data.get("loaded"))
+        .and_then(|value| value.as_array())
+        .map(|items| items.iter().filter_map(|item| item.as_str().map(ToOwned::to_owned)).collect())
+        .unwrap_or_default();
+    let failed = response
+        .data
+        .as_ref()
+        .and_then(|data| data.get("failed"))
+        .and_then(|value| value.as_array())
+        .map(|items| items.iter().map(|item| item.to_string()).collect())
+        .unwrap_or_default();
+    Ok(RuntimePrecheckResponse {
+        ok: response.success,
+        code: response.code,
+        message: response.message,
+        loaded,
+        failed,
+    })
+}
+
+#[tauri::command]
+fn export_diagnostics(state: tauri::State<'_, AppState>, snapshot: DiagnosticSnapshot) -> Result<String, String> {
+    let config = config_snapshot(&state)?;
+    std::fs::create_dir_all(&config.log_dir).map_err(|err| err.to_string())?;
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|err| err.to_string())?
+        .as_secs();
+    let path = config.log_dir.join(format!("olb-diagnostic-{timestamp}.json"));
+    let export = serde_json::json!({
+        "protocol_version": PROTOCOL_VERSION,
+        "privacy_note": "recording/transcript/translation content is not included by default",
+        "core_config": {
+            "profile": config.profile,
+            "backend": {
+                "base_url": config.backend.base_url,
+                "auth_token_configured": !config.backend.auth_token.is_empty(),
+                "client_name": config.backend.client_name,
+            },
+            "privacy": config.privacy,
+            "config_dir": config.config_dir,
+            "log_dir": config.log_dir,
+            "runtime_dir": config.runtime_dir,
+        },
+        "ui_runtime_snapshot": snapshot.value,
+    });
+    let content = serde_json::to_string_pretty(&export).map_err(|err| err.to_string())?;
+    std::fs::write(&path, content).map_err(|err| err.to_string())?;
+    Ok(path.to_string_lossy().into_owned())
 }
 
 #[tauri::command]
@@ -149,6 +258,10 @@ async fn start_audio_session(
     state: tauri::State<'_, AppState>,
     request: AudioSessionRequest,
 ) -> Result<StatusResponse, String> {
+    if let Some(runtime) = request.runtime.clone() {
+        let runtime = merge_runtime_config(&state, runtime)?;
+        runtime.validate()?;
+    }
     let session_id = prepare_session_start(&state)?;
     let config = config_snapshot(&state)?;
     emit_realtime_event(
@@ -171,13 +284,17 @@ async fn start_audio_session(
         return status_response(&state, "unreachable", Some(message));
     }
 
+    let local_input_device_id = request.local_input_device_id.clone();
+    let remote_input_device_id = request.remote_input_device_id.clone();
+    let output_device_id = request.output_device_id.clone();
+    let virtual_microphone_device_id = request.virtual_microphone_device_id.clone();
     let capture_session_id = session_id.clone();
     let capture_result = tokio::task::spawn_blocking(move || {
         let mut audio_frames = Vec::new();
         let mut local_config = default_capture_config(StreamId::AudioLocal, Direction::LocalToRemote);
-        local_config.device_id = request.local_input_device_id;
+        local_config.device_id = local_input_device_id;
         audio_frames.extend(capture_audio_frames(&local_config, &capture_session_id, 3)?);
-        if let Some(remote_device_id) = request.remote_input_device_id {
+        if let Some(remote_device_id) = remote_input_device_id {
         let mut remote_config = default_capture_config(StreamId::AudioRemote, Direction::RemoteToLocal);
         remote_config.device_id = Some(remote_device_id);
             audio_frames.extend(capture_audio_frames(&remote_config, &capture_session_id, 3)?);
@@ -204,8 +321,8 @@ async fn start_audio_session(
         }
     };
     let route = AudioRouteConfig {
-        output_device_id: request.output_device_id,
-        virtual_microphone_device_id: request.virtual_microphone_device_id,
+        output_device_id,
+        virtual_microphone_device_id,
     };
     match run_realtime_audio_smoke_test(&config.backend, &session_id, audio_frames, Some(route)).await {
         Ok(result) => {
@@ -268,6 +385,82 @@ fn prepare_session_start(state: &tauri::State<'_, AppState>) -> Result<String, S
 struct AppState {
     session: Mutex<SessionManager>,
     config: Mutex<CoreConfig>,
+    runtime: Mutex<RuntimeConfig>,
+}
+
+fn merge_runtime_config(state: &tauri::State<'_, AppState>, update: RuntimeConfigUpdate) -> Result<RuntimeConfig, String> {
+    let mut runtime = state.runtime.lock().map_err(|err| err.to_string())?;
+    runtime.apply(update);
+    Ok(runtime.clone())
+}
+
+impl RuntimeConfig {
+    fn apply(&mut self, update: RuntimeConfigUpdate) {
+        if let Some(value) = update.local_language {
+            self.local_language = value;
+        }
+        if let Some(value) = update.remote_language {
+            self.remote_language = value;
+        }
+        if let Some(value) = update.vad_model_path {
+            self.vad_model_path = value;
+        }
+        if let Some(value) = update.asr_model_path {
+            self.asr_model_path = value;
+        }
+        if let Some(value) = update.translate_model_path {
+            self.translate_model_path = value;
+        }
+        if let Some(value) = update.tts_voice {
+            self.tts_voice = value;
+        }
+    }
+
+    fn validate(&self) -> Result<(), String> {
+        if self.local_language.trim().is_empty() || self.remote_language.trim().is_empty() {
+            return Err("LANGUAGE_CHAIN_INCOMPLETE: local and remote languages are required".to_string());
+        }
+        if self.local_language == self.remote_language {
+            return Err("LANGUAGE_CHAIN_INCOMPLETE: local and remote languages must differ".to_string());
+        }
+        if self.vad_model_path.trim().is_empty()
+            || self.asr_model_path.trim().is_empty()
+            || self.translate_model_path.trim().is_empty()
+            || self.tts_voice.trim().is_empty()
+        {
+            return Err("MODEL_FILE_MISSING: VAD, ASR, translation model paths and TTS voice are required".to_string());
+        }
+        Ok(())
+    }
+
+    fn model_load_request(&self) -> ModelLoadRequest {
+        ModelLoadRequest {
+            providers: vec!["vad".to_string(), "asr".to_string(), "translate".to_string(), "tts".to_string()],
+            config: serde_json::json!({
+                "vad": {
+                    "provider": "silero-vad",
+                    "model_path": self.vad_model_path,
+                    "sample_rate": 16000,
+                },
+                "asr": {
+                    "provider": "faster-whisper",
+                    "model_path": self.asr_model_path,
+                    "language": self.local_language,
+                },
+                "translate": {
+                    "provider": "nllb",
+                    "model_path": self.translate_model_path,
+                    "source_lang": self.local_language,
+                    "target_lang": self.remote_language,
+                },
+                "tts": {
+                    "provider": "piper",
+                    "voice_path": self.tts_voice,
+                    "language": self.remote_language,
+                },
+            }),
+        }
+    }
 }
 
 fn status_response(state: &tauri::State<'_, AppState>, backend_status: &str, error: Option<String>) -> Result<StatusResponse, String> {
@@ -460,12 +653,15 @@ pub fn run() {
         .manage(AppState {
             session: Mutex::new(SessionManager::default()),
             config: Mutex::new(CoreConfig::default()),
+            runtime: Mutex::new(RuntimeConfig::default()),
         })
         .invoke_handler(tauri::generate_handler![
             get_status,
             get_config,
             get_audio_devices,
             update_config,
+            precheck_runtime_config,
+            export_diagnostics,
             start_session,
             start_audio_session,
             pause_session,

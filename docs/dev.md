@@ -1,6 +1,6 @@
 # 本地开发命令
 
-本文记录 P0 到 P4 落地后的最小开发与验证命令。
+本文记录 P0 到 P5 落地后的最小开发与验证命令。
 
 ## Python Model Service
 
@@ -53,6 +53,12 @@ npm install
 npm run tauri dev
 ```
 
-桌面端提供 P1/P2/P3 控制台：显示后端状态、会话状态、音频设备、不可达错误说明，并监听 `olb://backend`、`olb://session`、`olb://audio`、`olb://transcript`、`olb://translation`、`olb://tts`、`olb://error` 事件展示字幕、TTS 与音频状态。MVP 不默认接入云服务，不安装虚拟音频驱动；对方音频通过用户选择的输入设备或系统已配置的虚拟输入设备采集，不通过 HTTP JSON 或 Base64 传输实时音频。
+桌面端提供 P5 工作台：显示后端状态、会话状态、模型/预检状态、协议版本和音频格式；监听 `olb://backend`、`olb://session`、`olb://audio`、`olb://transcript`、`olb://translation`、`olb://tts`、`olb://error` 事件展示双向字幕、TTS、音频状态、延迟和队列指标。基础设置覆盖本方/对方设备 ID、输出/虚拟麦克风路由、local/remote language、VAD/ASR/Translate 本地模型路径、TTS voice、backend base URL/token，以及默认关闭的录音/转写/翻译保存开关。
+
+P5 启动操作会先执行预检：UI 层检查后端 URL、语言、模型路径、TTS voice 和隐私默认项；Rust `precheck_runtime_config` 会把语言、模型路径和 TTS voice 合并到运行时配置，并通过本地 Python Model Service 的 `POST /models/load` 执行模型加载/路径校验。预检失败时阻止 `start_session` / `start_audio_session`。错误 UI 会尽量从事件或错误字符串推导 type/code/module/action，并提供重新检查后端、重新枚举设备、停止复位会话等恢复操作。
+
+`apps/desktop/src-tauri` 额外提供 `export_diagnostics` command，用于把当前状态、配置摘要、UI 运行计数、延迟/队列指标、最近事件摘要写入本地 `log_dir` 下的 `olb-diagnostic-*.json`。诊断默认不包含录音、转写正文或翻译正文，也不写入 token 明文，只记录 token 是否已配置。
+
+MVP 不默认接入云服务，不安装虚拟音频驱动；对方音频通过用户选择的输入设备或系统已配置的虚拟输入设备采集，不通过 HTTP JSON 或 Base64 传输实时音频。普通控制 API 仍只使用 `GET` / `POST`，实时音频仍走 `WS /ws/session` 的 text/binary frame 协议。
 
 当前 P0 骨架关闭了 Tauri bundle 打包；发布阶段再补齐图标、签名和安装包配置。
