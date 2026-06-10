@@ -190,13 +190,13 @@ MVP 交付后应支持：
 
 | 编号 | 任务 | 负责人模块 | 优先级 | 依赖 | 交付物 |
 |---|---|---|---|---|---|
-| P6-01 | 建立端到端联调脚本和测试音频样本 | 测试/工程化 | P0 | P4-07 | 可重复 E2E 测试流程 |
-| P6-02 | 覆盖协议兼容和错误场景测试 | Rust/Python | P0 | P2-07 | 协议错误测试 |
-| P6-03 | 覆盖设备异常和权限异常测试 | Rust/UI | P0 | P3-08, P5-06 | 平台异常测试 |
-| P6-04 | 覆盖模型缺失、加载失败、语言链路不完整测试 | Python/UI | P0 | P4-06, P5-06 | 模型异常测试 |
-| P6-05 | 做 Windows 端安装和音频链路验证 | 发布 | P0 | P6-01 | Windows MVP 验证记录 |
-| P6-06 | 做 macOS 端安装、权限和音频链路验证 | 发布 | P0 | P6-01 | macOS MVP 验证记录 |
-| P6-07 | 整理 MVP 使用说明和故障排查文档 | 文档 | P1 | P6-05, P6-06 | 用户使用文档 |
+| P6-01 | 建立端到端联调脚本和测试音频样本 | 测试/工程化 | P0 | P4-07 | completed：`python-service/scripts/e2e_run.py`、`olb.runtime.e2e`、`tests/fixtures/synthetic_tone.wav`，runbook 见 `docs/e2e.md`。 |
+| P6-02 | 覆盖协议兼容和错误场景测试 | Rust/Python | P0 | P2-07 | completed：Python WS/binary anomaly tests 与 Rust `olb-protocol` binary frame error tests。 |
+| P6-03 | 覆盖设备异常和权限异常测试 | Rust/UI | P0 | P3-08, P5-06 | completed：`AudioError` 变体、`audio_error_code`、`realtime_error_code` 映射单测；真实硬件权限仍按 `docs/release.md` 手工记录。 |
+| P6-04 | 覆盖模型缺失、加载失败、语言链路不完整测试 | Python/UI | P0 | P4-06, P5-06 | completed：`tests/test_model_failures.py` 覆盖 `MODEL_FILE_MISSING` / `MODEL_LOAD_FAILED` / `LANGUAGE_CHAIN_INCOMPLETE`。 |
+| P6-05 | 做 Windows 端安装和音频链路验证 | 发布 | P0 | P6-01 | in_progress：自动 mock E2E 可在 Windows 运行；安装包和真实音频链路为 manual verification required，步骤见 `docs/release.md`。 |
+| P6-06 | 做 macOS 端安装、权限和音频链路验证 | 发布 | P0 | P6-01 | in_progress：本 Windows 环境不能自动验证 macOS 权限、签名、公证和真实音频链路；manual verification required，步骤见 `docs/release.md`。 |
+| P6-07 | 整理 MVP 使用说明和故障排查文档 | 文档 | P1 | P6-05, P6-06 | completed：新增 `docs/e2e.md`、`docs/release.md`，并在 `docs/dev.md` 记录 E2E 命令。 |
 
 验收标准：
 

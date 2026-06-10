@@ -93,6 +93,11 @@ class ModelManager:
 
     def load(self, providers: list[str], config: dict[str, Any]) -> dict:
         with self._lock:
+            requested = providers or ["vad", "asr", "translate", "tts"]
+            valid_providers = {"vad", "asr", "translate", "tts"}
+            unknown = [provider for provider in requested if provider not in valid_providers]
+            if unknown:
+                raise ServiceError(ErrorCode.MODEL_LOAD_FAILED, f"unknown provider: {unknown[0]}")
             mode = str(config.get("mode", "mock")).lower()
             self._mode = mode
             self._config_payload = config
@@ -101,6 +106,11 @@ class ModelManager:
             mt_cfg = config.get("translate", {}) or {}
             tts_cfg = config.get("tts", {}) or {}
 
+            def configured_path(provider_cfg: dict[str, Any], key: str, default: str) -> str:
+                if key in provider_cfg:
+                    return str(provider_cfg.get(key) or "")
+                return default
+
             failed: list[dict[str, str]] = []
             loaded: list[str] = []
 
@@ -108,7 +118,7 @@ class ModelManager:
                 vad_res = self._safe_load_real(
                     "vad",
                     lambda: SileroVadProvider(
-                        model_path=vad_cfg.get("model_path") or self._cfg.model_paths.vad,
+                        model_path=configured_path(vad_cfg, "model_path", self._cfg.model_paths.vad),
                         sample_rate=int(vad_cfg.get("sample_rate", 16000)),
                     ),
                 )
@@ -121,7 +131,7 @@ class ModelManager:
                 asr_res = self._safe_load_real(
                     "asr",
                     lambda: FasterWhisperProvider(
-                        model_path=asr_cfg.get("model_path") or self._cfg.model_paths.asr,
+                        model_path=configured_path(asr_cfg, "model_path", self._cfg.model_paths.asr),
                         device=asr_cfg.get("device", "cpu"),
                         compute_type=asr_cfg.get("compute_type", "int8"),
                     ),
@@ -135,7 +145,7 @@ class ModelManager:
                 translate_res = self._safe_load_real(
                     "translate",
                     lambda: NllbTranslateProvider(
-                        model_path=mt_cfg.get("model_path") or self._cfg.model_paths.translate,
+                        model_path=configured_path(mt_cfg, "model_path", self._cfg.model_paths.translate),
                     ),
                 )
                 fallback_translate = DictionaryTranslateProvider() or MockTranslateProvider()
@@ -148,7 +158,7 @@ class ModelManager:
                 tts_res = self._safe_load_real(
                     "tts",
                     lambda: PiperTtsProvider(
-                        voice_dir=tts_cfg.get("voice_path") or self._cfg.model_paths.tts_voice_dir,
+                        voice_dir=configured_path(tts_cfg, "voice_path", self._cfg.model_paths.tts_voice_dir),
                         default_voice=tts_cfg.get("default_voice"),
                     ),
                 )
@@ -162,13 +172,14 @@ class ModelManager:
                 asr = MockAsrProvider()
                 translate = DictionaryTranslateProvider() or MockTranslateProvider()
                 tts = MockTtsProvider()
-                loaded = list(providers)
+                loaded = list(requested)
 
             voices = tts.list_voices() if hasattr(tts, "list_voices") else []
             self._bundle = ModelBundle(vad=vad, asr=asr, translate=translate, tts=tts, voices=voices)
 
-            if mode == "real" and providers and len(failed) == len(providers):
-                first = failed[0]
+            requested_failed = [item for item in failed if item["name"] in requested]
+            if mode == "real" and requested and len(requested_failed) == len(requested):
+                first = requested_failed[0]
                 code = (
                     ErrorCode.MODEL_FILE_MISSING
                     if first.get("reason") == "missing"

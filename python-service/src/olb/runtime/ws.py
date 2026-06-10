@@ -102,6 +102,8 @@ def make_ws_router(
                 sm.stop(sid, flush=data.get("flush", True))
             except KeyError:
                 await _send_error(ws, code="SESSION_NOT_FOUND", message=sid, seq=seq)
+        else:
+            await _send_error(ws, code="INVALID_REQUEST", message=f"unknown message type: {mtype}", seq=seq)
 
     async def _handle_binary(
         ws: WebSocket,
@@ -120,6 +122,9 @@ def make_ws_router(
             )
         except Exception as exc:
             await _send_error(ws, code="INVALID_REQUEST", message=f"bad binary frame: {exc}", seq=seq)
+            return
+        if header.get("protocol_version") != PROTOCOL_VERSION:
+            await _send_error(ws, code="PROTOCOL_VERSION_MISMATCH", message="protocol mismatch", seq=seq)
             return
         if header.get("type") != "audio.frame":
             await _send_error(ws, code="INVALID_REQUEST", message="binary must be audio.frame", seq=seq)

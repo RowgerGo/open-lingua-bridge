@@ -622,6 +622,7 @@ mod tests {
     fn maps_audio_errors_to_public_error_codes() {
         assert_eq!(audio_error_code(&AudioError::DeviceUnavailable("missing".to_string())), ErrorCode::AudioDeviceUnavailable);
         assert_eq!(audio_error_code(&AudioError::CaptureFailed("denied".to_string())), ErrorCode::AudioCaptureFailed);
+        assert_eq!(audio_error_code(&AudioError::PlaybackFailed("closed".to_string())), ErrorCode::TtsRequestFailed);
         assert_eq!(audio_error_code(&AudioError::ResampleFailed("bad rate".to_string())), ErrorCode::AudioResampleFailed);
         assert_eq!(
             audio_error_code(&AudioError::PlaybackQueueOverloaded {
@@ -639,6 +640,10 @@ mod tests {
             capacity_samples: 2,
         });
         assert_eq!(realtime_error_code(&error), ErrorCode::PlaybackQueueOverloaded);
+        assert_eq!(realtime_error_code(&RealtimeClientError::InvalidUrl("bad".to_string())), ErrorCode::InvalidRequest);
+        assert_eq!(realtime_error_code(&RealtimeClientError::InvalidRequest("bad".to_string())), ErrorCode::InvalidRequest);
+        assert_eq!(realtime_error_code(&RealtimeClientError::TimedOut), ErrorCode::BackendUnreachable);
+        assert_eq!(realtime_error_code(&RealtimeClientError::IncompleteRoundtrip), ErrorCode::BackendUnreachable);
         let _status = PlaybackQueueStatus {
             queued_samples: 0,
             queued_duration_ms: 0,

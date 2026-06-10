@@ -611,4 +611,32 @@ mod tests {
         assert_eq!(status.queued_samples, 2);
         assert_eq!(queue.drain_all().len(), 2);
     }
+
+    #[test]
+    fn audio_error_variants_keep_expected_messages() {
+        assert_eq!(
+            AudioError::DeviceUnavailable("missing".to_string()).to_string(),
+            "audio device unavailable: missing"
+        );
+        assert_eq!(
+            AudioError::CaptureFailed("denied".to_string()).to_string(),
+            "audio permission denied or capture failed: denied"
+        );
+        assert_eq!(
+            AudioError::PlaybackFailed("closed".to_string()).to_string(),
+            "audio playback failed: closed"
+        );
+        assert_eq!(
+            AudioError::ResampleFailed("zero rate".to_string()).to_string(),
+            "audio resample failed: zero rate"
+        );
+        assert_eq!(
+            AudioError::PlaybackQueueOverloaded {
+                queued_samples: 4,
+                capacity_samples: 2,
+            }
+            .to_string(),
+            "playback queue overloaded: queued 4, capacity 2"
+        );
+    }
 }

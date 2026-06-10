@@ -8,6 +8,7 @@
 cd python-service
 uv run --extra test pytest
 uv run olb-model-service --port 8765
+uv run --extra test python scripts/e2e_run.py --skip-rust-binary
 ```
 
 服务默认监听 `127.0.0.1:8765`，控制 API 只使用 `GET` 和 `POST`，实时通道为 `WS /ws/session`。
@@ -45,11 +46,21 @@ Rust workspace 当前包含：
 
 Rust/Python 测试包含 `WS /ws/session` mock roundtrip：ASR/翻译结果通过 WebSocket text JSON 返回，`tts.audio` 通过 `OLB1` binary frame 返回。
 
+P6 端到端联调命令：
+
+```bash
+cd python-service
+uv run --extra test python scripts/e2e_run.py --skip-rust-binary
+```
+
+该命令使用 `python-service/src/olb/runtime/e2e.py` 生成确定性 16 kHz mono `pcm_s16le` mock tone，并输出 Markdown summary。完整 runbook 见 `docs/e2e.md`；发布准备、Windows/macOS 手工验证和错误码恢复动作见 `docs/release.md`。
+
 ## Tauri Desktop
 
 ```bash
 cd apps/desktop
 npm install
+npm run build
 npm run tauri dev
 ```
 
