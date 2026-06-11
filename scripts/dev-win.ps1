@@ -13,6 +13,7 @@ $ErrorActionPreference = "Stop"
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $PythonDir = Join-Path $RepoRoot "python-service"
 $DesktopDir = Join-Path $RepoRoot "apps\desktop"
+$VitePort = 1420
 $pythonProcess = $null
 
 function Require-Command {
@@ -121,12 +122,46 @@ function Wait-Health {
     throw "Python Model Service did not become healthy at $Url within $TimeoutSeconds seconds."
 }
 
+function Clear-VitePort {
+    param(
+        [int]$Port = 1420,
+        [int]$TimeoutSeconds = 10
+    )
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        $connections = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
+        if (-not $connections) {
+            return
+        }
+
+        foreach ($conn in $connections) {
+            $process = Get-Process -Id $conn.OwningProcess -ErrorAction SilentlyContinue
+            if ($null -ne $process -and $process.ProcessName -in @("node", "vite")) {
+                Write-Host ("Port {0} is held by {1} (PID {2}). Stopping it..." -f $Port, $process.ProcessName, $process.Id)
+                try {
+                    Stop-Process -Id $process.Id -Force -ErrorAction Stop
+                } catch {
+                    throw ("Failed to stop PID {0} holding port {1}: {2}" -f $process.Id, $Port, $_.Exception.Message)
+                }
+            } else {
+                $ownerName = if ($null -ne $process) { $process.ProcessName } else { "<unknown>" }
+                throw ("Port {0} is in use by {1} (PID {2}). Free the port and retry." -f $Port, $ownerName, $conn.OwningProcess)
+            }
+        }
+
+        Start-Sleep -Milliseconds 500
+    }
+
+    throw ("Port {0} stayed busy for more than {1} seconds." -f $Port, $TimeoutSeconds)
+}
+
 try {
     if ($Menu -or $PSBoundParameters.Count -eq 0) {
         Show-Menu
     }
 
-    $HealthUrl = "http://${HostName}:${Port}/health"
+    $HealthUrl = "http://$($HostName):$($Port)/health"
 
     Require-Command "uv"
     if (-not $NoDesktop) {
@@ -140,7 +175,9 @@ try {
         throw "Desktop directory not found: $DesktopDir"
     }
 
-    Write-Host "Starting Python Model Service on ${HostName}:${Port}..."
+    Clear-VitePort -Port $VitePort
+
+    Write-Host ("Starting Python Model Service on {0}:{1}..." -f $HostName, $Port)
     $env:OLB_AUTH_TOKEN = $AuthToken
     $env:OLB_LOG_LEVEL = $LogLevel
     $pythonProcess = Start-Process `
